@@ -1,0 +1,3 @@
+[submodule "MCCDaq-libusb-driver"]
+	path = MCCDaq-libusb-driver
+	url = https://github.com/SachsLab/MCCDaq-libusb-driver.git
