@@ -1,7 +1,8 @@
 # LSL-MeasurementComputing
+
 (Unsupported) Labstreaminglayer application for Measurement Computing device(s).
 
-This application was pulled out of another private repository (ExperimentSystem).
+This application was pulled out of another private repository (SachsLab/ExperimentSystem).
 It is no longer in use and only very limited support is available.
 
 ## Build

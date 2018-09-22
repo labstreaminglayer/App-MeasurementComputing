@@ -19,20 +19,36 @@ if(NOT TARGET LSL::lsl)
 	include(LSLCMake)
 endif()
 
-# mccdaq
-add_subdirectory(MCCDaq-libusb-driver)
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+#find_package(libusb-1.0 REQUIRED)
+find_package(USB1 REQUIRED)
+
+# Platform-specific libs
+SET(PLATFORM_LIBS)
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    find_library(IOKIT_FRAMEWORK IOKit)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+    list(APPEND PLATFORM_LIBS
+        ${COREFOUNDATION_FRAMEWORK}
+        ${IOKIT_FRAMEWORK})
+ENDIF()
 
 # Target executable
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE WIN32
     MCCOutlet.cpp
+	mccdevice.h
+	mccdevice.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    mccdaq
+    #${LIBUSB_1_INCLUDE_DIRS}
+	${LIBUSB_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    mccdaq
+    ${LIBUSB_LIBRARIES}
+    #${LIBUSB_1_LIBRARIES}
+    ${PLATFORM_LIBS}
     LSL::lsl
 )
 
@@ -40,7 +56,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 # target_compile_features(${PROJECT_NAME} PRIVATE cxx_auto_type cxx_lambda_init_captures)
 
 installLSLApp(${PROJECT_NAME})
-installLSLAuxFiles(${PROJECT_NAME}
-	${PROJECT_NAME}.cfg
-)
+#installLSLAuxFiles(${PROJECT_NAME}
+#	${PROJECT_NAME}.cfg
+#)
 LSLGenerateCPackConfig()
