@@ -33,9 +33,17 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         ${IOKIT_FRAMEWORK})
 ENDIF()
 
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+
+find_package(Threads REQUIRED)
+
+
 # Target executable
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE WIN32
-    MCCOutlet.cpp
+    main.cpp
+	mainwindow.cpp
+	mainwindow.h
+	mainwindow.ui
 	mccdevice.h
 	mccdevice.cpp
 )
@@ -46,17 +54,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ${LIBUSB_LIBRARIES}
-    #${LIBUSB_1_LIBRARIES}
-    ${PLATFORM_LIBS}
-    LSL::lsl
+	PRIVATE
+		Qt5::Widgets
+		Threads::Threads
+		LSL::lsl
+		${LIBUSB_LIBRARIES}
+		#${LIBUSB_1_LIBRARIES}
+		${PLATFORM_LIBS}
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 # target_compile_features(${PROJECT_NAME} PRIVATE cxx_auto_type cxx_lambda_init_captures)
 
 installLSLApp(${PROJECT_NAME})
-#installLSLAuxFiles(${PROJECT_NAME}
-#	${PROJECT_NAME}.cfg
-#)
+installLSLAuxFiles(${PROJECT_NAME} ${PROJECT_NAME}.cfg)
+installLSLAuxFiles(${PROJECT_NAME} ${LIBUSB_LIBRARIES})
 LSLGenerateCPackConfig()

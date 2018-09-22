@@ -64,14 +64,14 @@ ELSE (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
             set(LIBUSB_PLATFORM_PREFIX MS)  # Does this get used?
             IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
                 list(APPEND LIBUSB_LIB_SEARCH_PATH_RELEASE
-                    ${LIBUSB_ROOT}/x64/Release/lib)
+                    ${LIBUSB_ROOT}/x64/Release/dll)
                 list(APPEND LIBUSB_LIB_SEARCH_PATH_DEBUG
-                    ${LIBUSB_ROOT}/x64/Debug/lib)
+                    ${LIBUSB_ROOT}/x64/Debug/dll)
             ELSE()
                 list(APPEND LIBUSB_LIB_SEARCH_PATH_RELEASE
-                    ${LIBUSB_ROOT}/Win32/Release/lib)
+                    ${LIBUSB_ROOT}/Win32/Release/dll)
                 list(APPEND LIBUSB_LIB_SEARCH_PATH_DEBUG
-                    ${LIBUSB_ROOT}/Win32/Debug/lib)
+                    ${LIBUSB_ROOT}/Win32/Debug/dll)
             ENDIF()
         ENDIF()
     ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

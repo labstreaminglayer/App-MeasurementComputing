@@ -194,8 +194,9 @@ void MCCDevice::initDevice(int idProduct, std::string mfgSerialNumber){
         {
             
             //Open the device
+			int res = libusb_open(device, &dev_handle);
             //libusb_open(device, &dev_handle) returns -12 in Windows;
-            if (!libusb_open(device, &dev_handle))
+            if (!res)
             {
                 //Claim interface with the device
                 if (!libusb_claim_interface(dev_handle, 0))
