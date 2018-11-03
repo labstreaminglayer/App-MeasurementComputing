@@ -33,6 +33,7 @@ ELSE (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
             ${LIBUSB_ROOT}/libusb
             ${LIBUSB_ROOT}/libusb-1.0
             /usr/local/include
+            /usr/local/include/libusb-1.0
     )
     # There are 4 platform-specific ways we might get the libraries.
     # 1 - Windows MSVC, download the source, compile with MSVC

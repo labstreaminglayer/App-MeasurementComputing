@@ -74,7 +74,7 @@ void recording_thread_function(std::string name, int32_t device_param,
 	}
 
 	lsl::stream_outlet outlet(info);
-	std::vector<float_t> buffer(1, 20);
+	std::vector<float> buffer(1, 20);
 
 	MCCDevice* device = new MCCDevice(USB_1608_FS_PLUS);
 	device->sendMessage("AISCAN:STOP");

@@ -7,11 +7,12 @@ It is no longer in use and only very limited support is available.
 
 ## Build
 
-`mkdir build`
+`mkdir build && cd build`
 
-`cd build`
-
-`cmake ..` or, in Windows, `cmake .. -G "Visual Studio 12 Win64"`
+Configure:
+    * Linux: `cmake ..`
+    * MacOS: `cmake .. -DQt5_DIR=$(brew --prefix qt)/lib/cmake/Qt5/`
+    * Windows: `cmake .. -G "Visual Studio 14 2015 Win64" -DLIBUSB_ROOT="D:\Tools\Misc\libusb" -DQt5_DIR="C:\Qt\5.11.1\msvc2015_64\lib\cmake\Qt5"
 
 `make`
 
