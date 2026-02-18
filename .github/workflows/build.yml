@@ -240,12 +240,13 @@ jobs:
           # Remove original unsigned package
           rm -f *.tar.gz
 
-          # Get project version from CMakeLists.txt
-          VERSION=$(grep 'VERSION [0-9]' ../CMakeLists.txt | head -1 | sed 's/.*VERSION \([0-9.]*\).*/\1/')
-          echo "Detected version: $VERSION"
+          # Get project version from CMakeLists.txt (match the project() block, not cmake_minimum_required)
+          VERSION=$(grep -A1 'project(MCCOutlet' ../CMakeLists.txt | grep VERSION | sed 's/.*VERSION \([0-9.]*\).*/\1/')
+          ARCH=$(uname -m)
+          echo "Detected version: $VERSION, arch: $ARCH"
 
-          # Create signed package (universal binary)
-          tar -cvzf "MCCOutlet-${VERSION}-macOS_universal-signed.tar.gz" \
+          # Create signed package
+          tar -cvzf "MCCOutlet-${VERSION}-macOS_${ARCH}-signed.tar.gz" \
             MCCOutlet.app MCCOutletCLI Frameworks
 
           echo "Created package:"
