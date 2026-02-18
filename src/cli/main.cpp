@@ -36,16 +36,16 @@ void printUsage(const char* program_name) {
               << "  -d, --device INDEX      Device index (default: 0)\n"
               << "  --device-name NAME      Select device by product name (substring match)\n"
               << "  --low-chan N             Low channel (default: 0)\n"
-              << "  --high-chan N            High channel (default: 5)\n"
-              << "  -r, --rate RATE         Sample rate in Hz (default: 16384)\n"
+              << "  --high-chan N            High channel (default: 7)\n"
+              << "  -r, --rate RATE         Sample rate in Hz (default: 44100)\n"
               << "  --range VALUE           Voltage range (uldaq Range enum value, default: auto)\n"
               << "  --raw                   Output raw integer ADC counts instead of scaled voltage\n"
               << "\n"
               << "Examples:\n"
               << "  " << program_name << " --list-devices\n"
               << "  " << program_name << " --list-ranges -d 0\n"
-              << "  " << program_name << " --device-name USB-1608FS --rate 16384\n"
-              << "  " << program_name << " -d 0 --low-chan 0 --high-chan 5 --range 6\n"
+              << "  " << program_name << " --device-name USB-1608FS --rate 44100\n"
+              << "  " << program_name << " -d 0 --low-chan 0 --high-chan 7 --range 6\n"
               << std::endl;
 }
 

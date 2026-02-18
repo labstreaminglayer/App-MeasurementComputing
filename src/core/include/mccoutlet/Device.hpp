@@ -109,8 +109,8 @@ public:
         std::string stream_type = "RawBrainSignal";
         int device_index = 0;       ///< Index of device in discovered inventory
         int low_channel = 0;
-        int high_channel = 5;
-        double sample_rate = 16384.0;
+        int high_channel = 7;
+        double sample_rate = 44100.0;
         int range = -1;             ///< uldaq Range enum value, -1 = auto-select first
         bool scaled = true;         ///< true = calibrated voltage (float), false = raw ADC counts (int)
     };
