@@ -54,7 +54,10 @@ ExternalProject_Add(uldaq_external
             --disable-shared
 
     BUILD_COMMAND make -j${NPROC}
-    INSTALL_COMMAND make install
+    # Install only from src/ to get the library and header.
+    # The top-level install tries to write udev rules to /lib and run ldconfig,
+    # both of which require root and are unnecessary for a static library build.
+    INSTALL_COMMAND make -C src install
     BUILD_IN_SOURCE OFF
     BUILD_BYPRODUCTS "${ULDAQ_INSTALL_DIR}/lib/libuldaq.a"
 )
