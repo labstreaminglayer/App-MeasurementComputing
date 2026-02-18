@@ -15,7 +15,10 @@ Streams analog input data from [Measurement Computing](https://www.mccdaq.com/) 
 
 ## Supported Devices
 
-Any MCC USB DAQ device supported by [uldaq](https://github.com/mccdaq/uldaq) that provides analog input scanning. Tested with:
+Any MCC USB DAQ device supported by [uldaq](https://github.com/mccdaq/uldaq) that provides analog input scanning.
+See the Digilent-provided [list here](https://files.digilent.com/manuals/Linux-hw.pdf).
+
+Tested with:
 
 - USB-1608FS-Plus (16-bit, 8 SE channels, 400 kHz aggregate)
 
