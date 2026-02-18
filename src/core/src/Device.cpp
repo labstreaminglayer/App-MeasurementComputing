@@ -1,5 +1,6 @@
 #include "mccoutlet/Device.hpp"
 
+#include <lsl_cpp.h>
 #include <uldaq.h>
 
 #include <chrono>
@@ -463,11 +464,10 @@ DeviceCapabilities MCCDevice::getCapabilities() const {
     return capabilities_;
 }
 
-bool MCCDevice::getData(std::vector<float>& buffer) {
+bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
     if (!connected_ || handle_ == 0) return false;
 
     const int channelCount = config_.high_channel - config_.low_channel + 1;
-    const int samples_needed = static_cast<int>(buffer.size()) / channelCount;
     const size_t total_buffer_elements = scan_buffer_.size();
 
     while (!disconnecting_) {
@@ -477,42 +477,41 @@ bool MCCDevice::getData(std::vector<float>& buffer) {
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
-            // Overrun or other scan failure — attempt restart
             if (!restartScan()) return false;
             continue;
         }
 
-        // currentScanCount = per-channel samples transferred since scan start
         long long available = static_cast<long long>(xfer.currentScanCount) -
                               static_cast<long long>(scans_read_);
 
-        if (available >= samples_needed) {
-            // Calculate read position in the circular buffer
+        if (available > 0) {
+            timestamp = lsl::local_clock();
+
+            size_t num_elements = static_cast<size_t>(available) * channelCount;
+            buffer.resize(num_elements);
+
             size_t read_offset =
                 (static_cast<size_t>(scans_read_) * channelCount) % total_buffer_elements;
 
-            // Copy data, converting double -> float, handling wrap-around
-            for (size_t i = 0; i < buffer.size(); ++i) {
+            for (size_t i = 0; i < num_elements; ++i) {
                 buffer[i] = static_cast<float>(
                     scan_buffer_[(read_offset + i) % total_buffer_elements]);
             }
 
-            scans_read_ += samples_needed;
+            scans_read_ += available;
             return true;
         }
 
-        // Sleep briefly before polling again
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     return false;
 }
 
-bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer) {
+bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
     if (!connected_ || handle_ == 0) return false;
 
     const int channelCount = config_.high_channel - config_.low_channel + 1;
-    const int samples_needed = static_cast<int>(buffer.size()) / channelCount;
     const size_t total_buffer_elements = scan_buffer_.size();
 
     while (!disconnecting_) {
@@ -529,16 +528,21 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer) {
         long long available = static_cast<long long>(xfer.currentScanCount) -
                               static_cast<long long>(scans_read_);
 
-        if (available >= samples_needed) {
+        if (available > 0) {
+            timestamp = lsl::local_clock();
+
+            size_t num_elements = static_cast<size_t>(available) * channelCount;
+            buffer.resize(num_elements);
+
             size_t read_offset =
                 (static_cast<size_t>(scans_read_) * channelCount) % total_buffer_elements;
 
-            for (size_t i = 0; i < buffer.size(); ++i) {
+            for (size_t i = 0; i < num_elements; ++i) {
                 buffer[i] = static_cast<int32_t>(
                     scan_buffer_[(read_offset + i) % total_buffer_elements]);
             }
 
-            scans_read_ += samples_needed;
+            scans_read_ += available;
             return true;
         }
 
@@ -548,11 +552,10 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer) {
     return false;
 }
 
-bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer) {
+bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
     if (!connected_ || handle_ == 0) return false;
 
     const int channelCount = config_.high_channel - config_.low_channel + 1;
-    const int samples_needed = static_cast<int>(buffer.size()) / channelCount;
     const size_t total_buffer_elements = scan_buffer_.size();
 
     while (!disconnecting_) {
@@ -569,16 +572,21 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer) {
         long long available = static_cast<long long>(xfer.currentScanCount) -
                               static_cast<long long>(scans_read_);
 
-        if (available >= samples_needed) {
+        if (available > 0) {
+            timestamp = lsl::local_clock();
+
+            size_t num_elements = static_cast<size_t>(available) * channelCount;
+            buffer.resize(num_elements);
+
             size_t read_offset =
                 (static_cast<size_t>(scans_read_) * channelCount) % total_buffer_elements;
 
-            for (size_t i = 0; i < buffer.size(); ++i) {
+            for (size_t i = 0; i < num_elements; ++i) {
                 buffer[i] = static_cast<int16_t>(
                     scan_buffer_[(read_offset + i) % total_buffer_elements]);
             }
 
-            scans_read_ += samples_needed;
+            scans_read_ += available;
             return true;
         }
 

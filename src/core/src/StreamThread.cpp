@@ -97,41 +97,39 @@ void StreamThread::threadFunction() {
             statusCallback_("LSL outlet created: " + info.name, false);
         }
 
-        // Buffer ~100ms of data per chunk, minimum 1 sample
-        size_t samples_per_chunk = std::max(
-            1,
-            static_cast<int>(info.sample_rate * 0.1)
-        );
-        size_t chunk_elements = samples_per_chunk * info.channel_count;
+        // Reserve ~1 second of capacity; getData resizes to actual available data
+        size_t reserve_elements =
+            static_cast<size_t>(info.sample_rate) * info.channel_count;
+        double timestamp = 0.0;
 
         if (info.scaled) {
-            // Scaled mode: calibrated voltage as float
-            std::vector<float> buffer(chunk_elements);
+            std::vector<float> buffer;
+            buffer.reserve(reserve_elements);
             while (!shutdown_) {
-                if (device_->getData(buffer)) {
-                    outlet.pushChunk(buffer);
+                if (device_->getData(buffer, timestamp)) {
+                    outlet.pushChunk(buffer, timestamp);
                 } else if (!shutdown_) {
                     if (statusCallback_) statusCallback_("Device acquisition error", true);
                     break;
                 }
             }
         } else if (info.resolution_bits <= 16) {
-            // Raw mode, <=16-bit ADC: integer counts as int16
-            std::vector<int16_t> buffer(chunk_elements);
+            std::vector<int16_t> buffer;
+            buffer.reserve(reserve_elements);
             while (!shutdown_) {
-                if (device_->getDataInt16(buffer)) {
-                    outlet.pushChunk(buffer);
+                if (device_->getDataInt16(buffer, timestamp)) {
+                    outlet.pushChunk(buffer, timestamp);
                 } else if (!shutdown_) {
                     if (statusCallback_) statusCallback_("Device acquisition error", true);
                     break;
                 }
             }
         } else {
-            // Raw mode, >16-bit ADC: integer counts as int32
-            std::vector<int32_t> buffer(chunk_elements);
+            std::vector<int32_t> buffer;
+            buffer.reserve(reserve_elements);
             while (!shutdown_) {
-                if (device_->getDataInt32(buffer)) {
-                    outlet.pushChunk(buffer);
+                if (device_->getDataInt32(buffer, timestamp)) {
+                    outlet.pushChunk(buffer, timestamp);
                 } else if (!shutdown_) {
                     if (statusCallback_) statusCallback_("Device acquisition error", true);
                     break;

@@ -6,4 +6,5 @@ ui_*.h
 /out/
 .DS_Store
 .idea
-.cmake-build-*
+.cmake-build-*/
+.cache/

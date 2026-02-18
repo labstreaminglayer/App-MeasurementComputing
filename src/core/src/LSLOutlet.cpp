@@ -60,21 +60,21 @@ LSLOutlet::LSLOutlet(const DeviceInfo& info)
 
 LSLOutlet::~LSLOutlet() = default;
 
-void LSLOutlet::pushChunk(const std::vector<float>& data) {
+void LSLOutlet::pushChunk(const std::vector<float>& data, double timestamp) {
     if (outlet_ && !data.empty()) {
-        outlet_->push_chunk_multiplexed(data);
+        outlet_->push_chunk_multiplexed(data, timestamp);
     }
 }
 
-void LSLOutlet::pushChunk(const std::vector<int32_t>& data) {
+void LSLOutlet::pushChunk(const std::vector<int32_t>& data, double timestamp) {
     if (outlet_ && !data.empty()) {
-        outlet_->push_chunk_multiplexed(data);
+        outlet_->push_chunk_multiplexed(data, timestamp);
     }
 }
 
-void LSLOutlet::pushChunk(const std::vector<int16_t>& data) {
+void LSLOutlet::pushChunk(const std::vector<int16_t>& data, double timestamp) {
     if (outlet_ && !data.empty()) {
-        outlet_->push_chunk_multiplexed(data);
+        outlet_->push_chunk_multiplexed(data, timestamp);
     }
 }
 

@@ -22,9 +22,9 @@ public:
     LSLOutlet(LSLOutlet&&) noexcept = default;
     LSLOutlet& operator=(LSLOutlet&&) noexcept = default;
 
-    void pushChunk(const std::vector<float>& data);
-    void pushChunk(const std::vector<int32_t>& data);
-    void pushChunk(const std::vector<int16_t>& data);
+    void pushChunk(const std::vector<float>& data, double timestamp = 0.0);
+    void pushChunk(const std::vector<int32_t>& data, double timestamp = 0.0);
+    void pushChunk(const std::vector<int16_t>& data, double timestamp = 0.0);
     void pushSample(const std::vector<float>& sample);
     std::string getStreamName() const;
     bool hasConsumers() const;

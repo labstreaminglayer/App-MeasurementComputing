@@ -61,19 +61,22 @@ public:
     virtual DeviceCapabilities getCapabilities() const = 0;
 
     /**
-     * @brief Retrieve data from the device
-     * @param buffer Output buffer (channel-interleaved float samples)
+     * @brief Retrieve all available data from the device
+     * @param buffer Resized to fit all available channel-interleaved samples
+     * @param timestamp Output: LSL timestamp of the most recent sample
      * @return true if data was retrieved, false on error or shutdown
      *
-     * Blocks until enough data is available to fill the buffer.
+     * Blocks until at least one scan is available, then drains everything
+     * the device has buffered. The timestamp is captured at the moment
+     * data availability is detected.
      */
-    virtual bool getData(std::vector<float>& buffer) = 0;
+    virtual bool getData(std::vector<float>& buffer, double& timestamp) = 0;
 
-    /** @brief Retrieve raw data as int32 (for >16-bit ADC in raw mode) */
-    virtual bool getDataInt32(std::vector<int32_t>& buffer) = 0;
+    /** @brief Retrieve all available raw data as int32 (for >16-bit ADC in raw mode) */
+    virtual bool getDataInt32(std::vector<int32_t>& buffer, double& timestamp) = 0;
 
-    /** @brief Retrieve raw data as int16 (for <=16-bit ADC in raw mode) */
-    virtual bool getDataInt16(std::vector<int16_t>& buffer) = 0;
+    /** @brief Retrieve all available raw data as int16 (for <=16-bit ADC in raw mode) */
+    virtual bool getDataInt16(std::vector<int16_t>& buffer, double& timestamp) = 0;
 };
 
 /**
@@ -123,9 +126,9 @@ public:
     bool isConnected() const override;
     DeviceInfo getInfo() const override;
     DeviceCapabilities getCapabilities() const override;
-    bool getData(std::vector<float>& buffer) override;
-    bool getDataInt32(std::vector<int32_t>& buffer) override;
-    bool getDataInt16(std::vector<int16_t>& buffer) override;
+    bool getData(std::vector<float>& buffer, double& timestamp) override;
+    bool getDataInt32(std::vector<int32_t>& buffer, double& timestamp) override;
+    bool getDataInt16(std::vector<int16_t>& buffer, double& timestamp) override;
 
 private:
     bool restartScan();
