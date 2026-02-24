@@ -40,7 +40,7 @@ LSLOutlet::LSLOutlet(const DeviceInfo& info)
         double full_scale = std::pow(2.0, info.resolution_bits);
         double span = info.range_max - info.range_min;
         double slope = span / full_scale;
-        double offset = info.range_min;
+        double offset = (info.range_min + info.range_max) / 2.0;
         acq.append_child_value("scaling_slope", std::to_string(slope));
         acq.append_child_value("scaling_offset", std::to_string(offset));
     }
