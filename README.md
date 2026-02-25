@@ -6,7 +6,7 @@ Streams analog input data from [Measurement Computing](https://www.mccdaq.com/) 
 
 - Continuous hardware-paced acquisition via `ulAInScan` (no dropped samples)
 - **Scaled mode**: calibrated voltage output as `cf_float32`
-- **Raw mode**: integer ADC counts matching device resolution (`cf_int16` for 12/16-bit, `cf_int32` for 18/24-bit)
+- **Raw mode**: integer ADC counts matching device resolution (`cf_int16` for 12/16-bit, `cf_int32` for 18/24-bit), offset by the midpoint (0V = 0).
 - LSL stream metadata includes voltage range, resolution, and scaling coefficients for offline reconstruction
 - Automatic FIFO overrun recovery (restarts scan transparently on USB scheduling delays)
 - Per-device capability queries: supported voltage ranges, resolution, max scan rate
@@ -145,7 +145,7 @@ Options:
   --high-chan N            High channel (default: 5)
   -r, --rate RATE         Sample rate in Hz (default: 16384)
   --range VALUE           Voltage range (uldaq Range enum value, default: auto)
-  --raw                   Output raw integer ADC counts instead of scaled voltage
+  --raw                   Output raw integer ADC instead of scaled voltage
 ```
 
 Examples:
@@ -160,7 +160,7 @@ MCCOutletCLI --list-ranges -d 0
 # Stream 6 channels at 16384 Hz (scaled voltage)
 MCCOutletCLI -d 0 --low-chan 0 --high-chan 5 --rate 16384
 
-# Stream raw ADC counts
+# Stream raw ADC integers
 MCCOutletCLI --raw --device-name USB-1608FS
 
 # Use a config file
@@ -192,14 +192,14 @@ Outputs calibrated voltage as `cf_float32`. Channel units are volts (`V`).
 
 ### Raw Mode (`--raw`)
 
-Outputs uncalibrated ADC counts. The LSL channel format is selected based on the device's ADC resolution:
+Outputs uncalibrated ADC offset by midpoint (0=0). The LSL channel format is selected based on the device's ADC resolution:
 
-| ADC Resolution | LSL Format  | Value Range         |
-|----------------|-------------|---------------------|
-| 12-bit         | `cf_int16`  | 0 - 4095            |
-| 16-bit         | `cf_int16`  | 0 - 65535           |
-| 18-bit         | `cf_int32`  | 0 - 262143          |
-| 24-bit         | `cf_int32`  | 0 - 16777215        |
+| ADC Resolution | LSL Format  | Value Range           |
+|----------------|-------------|-----------------------|
+| 12-bit         | `cf_int16`  | -2048 - 2047          |
+| 16-bit         | `cf_int16`  | -32768 - 32767        |
+| 18-bit         | `cf_int32`  | -116072 - 116071      |
+| 24-bit         | `cf_int32`  | -83886078 - 83886077  |
 
 ### Stream Metadata
 

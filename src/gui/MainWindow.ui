@@ -180,7 +180,7 @@
         </item>
         <item>
          <property name="text">
-          <string>Raw (Integer Counts)</string>
+          <string>Raw (Integer)</string>
          </property>
         </item>
        </widget>

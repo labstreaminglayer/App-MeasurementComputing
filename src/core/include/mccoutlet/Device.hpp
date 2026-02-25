@@ -112,7 +112,7 @@ public:
         int high_channel = 7;
         double sample_rate = 44100.0;
         int range = -1;             ///< uldaq Range enum value, -1 = auto-select first
-        bool scaled = true;         ///< true = calibrated voltage (float), false = raw ADC counts (int)
+        bool scaled = true;         ///< true = calibrated voltage (float), false = raw ADC (int)
     };
 
     using StatusCallback = std::function<void(const std::string& message, bool is_error)>;

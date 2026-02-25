@@ -39,7 +39,7 @@ void printUsage(const char* program_name) {
               << "  --high-chan N            High channel (default: 7)\n"
               << "  -r, --rate RATE         Sample rate in Hz (default: 44100)\n"
               << "  --range VALUE           Voltage range (uldaq Range enum value, default: auto)\n"
-              << "  --raw                   Output raw integer ADC counts instead of scaled voltage\n"
+              << "  --raw                   Output raw integer ADC integers instead of scaled voltage\n"
               << "\n"
               << "Examples:\n"
               << "  " << program_name << " --list-devices\n"

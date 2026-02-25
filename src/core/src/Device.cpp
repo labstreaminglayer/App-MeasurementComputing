@@ -537,9 +537,11 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
             size_t read_offset =
                 (static_cast<size_t>(scans_read_) * channelCount) % total_buffer_elements;
 
+            const int64_t mid = 1LL << (capabilities_.resolution_bits - 1);
             for (size_t i = 0; i < num_elements; ++i) {
-                buffer[i] = static_cast<int32_t>(
+                auto raw = static_cast<int64_t>(
                     scan_buffer_[(read_offset + i) % total_buffer_elements]);
+                buffer[i] = static_cast<int32_t>(raw - mid);
             }
 
             scans_read_ += available;
@@ -581,9 +583,11 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
             size_t read_offset =
                 (static_cast<size_t>(scans_read_) * channelCount) % total_buffer_elements;
 
+            const int32_t mid = 1 << (capabilities_.resolution_bits - 1);
             for (size_t i = 0; i < num_elements; ++i) {
-                buffer[i] = static_cast<int16_t>(
+                auto raw = static_cast<int32_t>(
                     scan_buffer_[(read_offset + i) % total_buffer_elements]);
+                buffer[i] = static_cast<int16_t>(raw - mid);
             }
 
             scans_read_ += available;
