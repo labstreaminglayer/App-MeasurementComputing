@@ -1,0 +1,8 @@
+# Audio latency test dependencies
+numpy
+pylsl
+sounddevice
+pyxdf
+# Optional but recommended:
+matplotlib   # latency plots
+pyaudio      # for --method pyaudio-callback (needs portaudio: `brew install portaudio`)

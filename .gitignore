@@ -8,3 +8,8 @@ ui_*.h
 .idea
 .cmake-build-*/
 .cache/
+
+# Python venv and latency-test outputs
+/.venv/
+scripts/audio_latency_test/recordings/
+scripts/audio_latency_test/__pycache__/
