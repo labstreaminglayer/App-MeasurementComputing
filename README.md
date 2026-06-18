@@ -233,6 +233,10 @@ USB Full Speed devices have limited hardware FIFOs (e.g., 64 KB on the USB-1608F
 
 The number of available channels depends on the device and its input mode. The USB-1608FS-Plus provides 8 single-ended channels (0-7). If `high_channel` exceeds the device's maximum, it is silently clamped.
 
+### Timestamp Delay
+
+Using scripts/audio_latency_test, I characterized that the USB-1608FS-Plus timestamps audio tones about **1.1 msec** after the audio callback time. This delay could either be due to a delay in the audio hardware layer or in the DAQ buffer, or a combination of both. These delays exist in all devices and are generally unknowable but can be characterized using hardware synchronizing the different devices. If someone identifies consistent delays in the hardware then please let me know, and I can subtract these delays from the timestamps at the source.
+
 ## macOS Code Signing
 
 For local development, the build applies ad-hoc signing with USB and network entitlements.
