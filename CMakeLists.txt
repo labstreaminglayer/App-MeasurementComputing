@@ -36,7 +36,7 @@ option(MCCOUTLET_BUILD_CLI "Build the CLI application" ON)
 # liblsl Dependency
 # =============================================================================
 set(LSL_INSTALL_ROOT "" CACHE PATH "Path to installed liblsl (optional)")
-set(LSL_FETCH_REF "v1.17.4" CACHE STRING "liblsl version to fetch from GitHub")
+set(LSL_FETCH_REF "v1.18.0.b2" CACHE STRING "liblsl version to fetch from GitHub")
 
 if(LSL_INSTALL_ROOT)
     find_package(LSL REQUIRED
