@@ -61,6 +61,14 @@ void StreamThread::stop() {
 
     shutdown_ = true;
 
+    // Break any in-progress getData*() call before joining. Otherwise a
+    // wedged device leaves the worker spinning inside getData*() (which only
+    // checks the device's own abort flag, not shutdown_) and join() blocks
+    // forever, freezing the caller (the GUI thread).
+    if (device_) {
+        device_->requestStop();
+    }
+
     if (thread_ && thread_->joinable()) {
         thread_->join();
     }

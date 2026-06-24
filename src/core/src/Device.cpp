@@ -422,6 +422,12 @@ bool MCCDevice::restartScan() {
     return true;
 }
 
+void MCCDevice::requestStop() {
+    // Break the getData*() polling loops so the streaming thread can exit
+    // before disconnect()/join(). Set from the caller's thread.
+    disconnecting_ = true;
+}
+
 void MCCDevice::disconnect() {
     disconnecting_ = true;
 
