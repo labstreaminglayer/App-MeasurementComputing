@@ -8,6 +8,7 @@
  */
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -152,6 +153,10 @@ private:
     bool scanning_ = false;
     std::atomic<bool> disconnecting_{false};
     int overrun_count_ = 0;
+
+    // Coalesce overrun status reports: time of the last one emitted to the
+    // callback. Default-constructed (epoch) means none emitted yet.
+    std::chrono::steady_clock::time_point last_overrun_report_{};
 
     // ulAInScan circular buffer (double precision, as required by uldaq)
     std::vector<double> scan_buffer_;

@@ -418,7 +418,13 @@ bool MCCDevice::restartScan() {
     scans_read_ = 0;
     overrun_count_++;
 
-    if (statusCallback_) {
+    // Coalesce reports to at most one per second so a recovery storm cannot
+    // flood the consumer (e.g. the GUI's queued-event status updates).
+    auto now = std::chrono::steady_clock::now();
+    if (statusCallback_ &&
+        (last_overrun_report_.time_since_epoch().count() == 0 ||
+         now - last_overrun_report_ >= std::chrono::seconds(1))) {
+        last_overrun_report_ = now;
         statusCallback_(
             "Device FIFO overrun detected, scan restarted (overrun #" +
             std::to_string(overrun_count_) + ")", true);
