@@ -18,6 +18,11 @@ constexpr int MAX_DEV_COUNT = 100;
 // Larger values tolerate more jitter but use more memory.
 constexpr int SCAN_BUFFER_SECONDS = 10;
 
+// Give up after this many consecutive scan restarts within a single getData*()
+// call. A genuine overrun recovers in one restart; an unrecoverable USB state
+// (e.g. stuck transfers) otherwise spins here forever, hammering ulAInScanStop.
+constexpr int MAX_RESTART_ATTEMPTS = 3;
+
 std::string ulErrorString(UlError err) {
     char msg[ERR_MSG_LEN]{};
     ulGetErrMsg(err, msg);
@@ -476,6 +481,7 @@ bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
     const int channelCount = config_.high_channel - config_.low_channel + 1;
     const size_t total_buffer_elements = scan_buffer_.size();
 
+    int restart_attempts = 0;
     while (!disconnecting_) {
         ScanStatus status{};
         TransferStatus xfer{};
@@ -483,6 +489,15 @@ bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
+            if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
+                if (statusCallback_) {
+                    statusCallback_(
+                        "Acquisition could not be recovered after " +
+                        std::to_string(MAX_RESTART_ATTEMPTS) +
+                        " restart attempts; stopping stream", true);
+                }
+                return false;
+            }
             if (!restartScan()) return false;
             continue;
         }
@@ -520,6 +535,7 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
     const int channelCount = config_.high_channel - config_.low_channel + 1;
     const size_t total_buffer_elements = scan_buffer_.size();
 
+    int restart_attempts = 0;
     while (!disconnecting_) {
         ScanStatus status{};
         TransferStatus xfer{};
@@ -527,6 +543,15 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
+            if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
+                if (statusCallback_) {
+                    statusCallback_(
+                        "Acquisition could not be recovered after " +
+                        std::to_string(MAX_RESTART_ATTEMPTS) +
+                        " restart attempts; stopping stream", true);
+                }
+                return false;
+            }
             if (!restartScan()) return false;
             continue;
         }
@@ -566,6 +591,7 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
     const int channelCount = config_.high_channel - config_.low_channel + 1;
     const size_t total_buffer_elements = scan_buffer_.size();
 
+    int restart_attempts = 0;
     while (!disconnecting_) {
         ScanStatus status{};
         TransferStatus xfer{};
@@ -573,6 +599,15 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
+            if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
+                if (statusCallback_) {
+                    statusCallback_(
+                        "Acquisition could not be recovered after " +
+                        std::to_string(MAX_RESTART_ATTEMPTS) +
+                        " restart attempts; stopping stream", true);
+                }
+                return false;
+            }
             if (!restartScan()) return false;
             continue;
         }
