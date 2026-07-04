@@ -8,6 +8,7 @@
  */
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -57,6 +58,17 @@ public:
     virtual bool startAcquisition() = 0;
     virtual void disconnect() = 0;
     virtual bool isConnected() const = 0;
+
+    /**
+     * @brief Request that any in-progress getData*() call return promptly.
+     *
+     * Safe to call from a thread other than the one running getData*().
+     * Causes the blocking acquisition loops to break out so the streaming
+     * thread can observe its shutdown flag and exit before disconnect()
+     * and the subsequent join(). Without this, a wedged device leaves
+     * getData*() spinning and stop() deadlocks on the join.
+     */
+    virtual void requestStop() = 0;
     virtual DeviceInfo getInfo() const = 0;
     virtual DeviceCapabilities getCapabilities() const = 0;
 
@@ -123,6 +135,7 @@ public:
     bool connect() override;
     bool startAcquisition() override;
     void disconnect() override;
+    void requestStop() override;
     bool isConnected() const override;
     DeviceInfo getInfo() const override;
     DeviceCapabilities getCapabilities() const override;
@@ -140,6 +153,10 @@ private:
     bool scanning_ = false;
     std::atomic<bool> disconnecting_{false};
     int overrun_count_ = 0;
+
+    // Coalesce overrun status reports: time of the last one emitted to the
+    // callback. Default-constructed (epoch) means none emitted yet.
+    std::chrono::steady_clock::time_point last_overrun_report_{};
 
     // ulAInScan circular buffer (double precision, as required by uldaq)
     std::vector<double> scan_buffer_;

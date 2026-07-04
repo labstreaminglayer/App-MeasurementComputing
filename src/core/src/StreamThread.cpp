@@ -1,4 +1,5 @@
 #include "mccoutlet/StreamThread.hpp"
+#include "mccoutlet/PowerAssertion.hpp"
 #include <iostream>
 
 namespace mccoutlet {
@@ -61,6 +62,14 @@ void StreamThread::stop() {
 
     shutdown_ = true;
 
+    // Break any in-progress getData*() call before joining. Otherwise a
+    // wedged device leaves the worker spinning inside getData*() (which only
+    // checks the device's own abort flag, not shutdown_) and join() blocks
+    // forever, freezing the caller (the GUI thread).
+    if (device_) {
+        device_->requestStop();
+    }
+
     if (thread_ && thread_->joinable()) {
         thread_->join();
     }
@@ -89,6 +98,14 @@ DeviceInfo StreamThread::getDeviceInfo() const {
 }
 
 void StreamThread::threadFunction() {
+    // Keep the host awake for the whole streaming session. Idle system sleep
+    // suspends the USB bus and wedges the DAQ's in-flight transfers (uldaq then
+    // reports "still xfer pending" and the scan cannot be recovered), and App
+    // Nap can throttle the libusb event thread enough to overrun the device
+    // FIFO. Released automatically when this function returns (stop, error, or
+    // shutdown). No-op on non-Apple platforms.
+    PowerAssertion keep_awake("Streaming MCC DAQ to LSL");
+
     try {
         auto info = device_->getInfo();
         LSLOutlet outlet(info);
