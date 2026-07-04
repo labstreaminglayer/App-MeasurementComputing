@@ -16,7 +16,7 @@ if(POLICY CMP0177)
 endif()
 
 project(MCCOutlet
-    VERSION 3.1.0
+    VERSION 3.2.0
     DESCRIPTION "Measurement Computing DAQ to LSL"
     HOMEPAGE_URL "https://github.com/labstreaminglayer/App-MeasurementComputing"
     LANGUAGES CXX C
