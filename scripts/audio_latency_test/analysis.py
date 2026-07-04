@@ -46,6 +46,83 @@ def load_from_xdf(path, mcc_name, marker_type="Markers", mcc_channel=0):
 
 
 # --------------------------------------------------------------------------- #
+# Timestamp health check
+# --------------------------------------------------------------------------- #
+def check_timestamps(path, mcc_name, marker_type="Markers"):
+    """Verify the *raw* (un-synced, un-dejittered) timestamps are sound.
+
+    ``load_from_xdf`` deliberately loads with ``dejitter_timestamps=True``,
+    which refits each stream's timestamps onto a clean monotonic line and so
+    *hides* upstream defects. This routine instead loads the timestamps exactly
+    as the outlet emitted them and checks for the two problems that surface
+    downstream (e.g. in Orion) as "negative timestamps":
+
+    * **negative absolute timestamps** -- a genuinely bad clock value;
+    * **non-monotonic (backward) steps** -- consecutive samples whose timestamp
+      goes *backwards*. These become negative inter-sample intervals (and, in a
+      consumer that derives sample times by accumulating dt or that aligns
+      without dejittering, negative timestamps). They are the expected artifact
+      of stamping each chunk's most-recent sample with ``local_clock()`` at read
+      time and letting liblsl back-date the rest: when one chunk's back-dated
+      start lands before the previous chunk's end, time runs backward.
+
+    Returns ``(ok, results)`` where ``ok`` is False if any stream has negative
+    timestamps, and ``results`` maps stream name -> stats dict. Prints a
+    human-readable summary.
+    """
+    import pyxdf
+
+    streams, _ = pyxdf.load_xdf(
+        path, synchronize_clocks=False, dejitter_timestamps=False)
+
+    results = {}
+    ok = True
+    lines = ["Timestamp health check (raw, as emitted -- no sync/dejitter):"]
+    for s in streams:
+        name = s["info"]["name"][0]
+        ts = np.asarray(s["time_stamps"], dtype=float)
+        if ts.size == 0:
+            continue
+        neg = int(np.count_nonzero(ts < 0))
+        dt = np.diff(ts)
+        back = dt < 0
+        n_back = int(np.count_nonzero(back))
+        max_back_ms = float(-dt[back].min() * 1e3) if n_back else 0.0
+        results[name] = {
+            "n": int(ts.size),
+            "t_min": float(ts.min()), "t_max": float(ts.max()),
+            "n_negative": neg,
+            "n_backward": n_back, "max_backward_ms": max_back_ms,
+            "pct_backward": 100.0 * n_back / max(dt.size, 1),
+        }
+        if neg:
+            status = "FAIL (negative timestamps)"
+            ok = False
+        elif n_back:
+            status = "WARN (non-monotonic)"
+        else:
+            status = "OK"
+        detail = f"  backward_steps={n_back}"
+        if n_back:
+            detail += (f" ({100.0 * n_back / max(dt.size, 1):.2f}% of samples,"
+                       f" max {max_back_ms:.3f} ms back)")
+        lines.append(
+            f"  {name:14} n={ts.size:>8d}  t_min={ts.min():14.4f}"
+            f"  neg={neg}{detail}  -> {status}")
+
+    mcc = results.get(mcc_name)
+    if mcc is not None and mcc["n_negative"] == 0 and mcc["n_backward"] > 0:
+        lines.append(
+            "  NOTE: no negative timestamps on this machine, but the MCC stream "
+            "is non-monotonic. Across machines (or in a consumer that does not "
+            "dejitter, e.g. Orion) those backward steps are what appear as "
+            "negative timestamps. Fix upstream by making the outlet emit "
+            "monotonic, device-anchored timestamps.")
+    print("\n".join(lines))
+    return ok, results
+
+
+# --------------------------------------------------------------------------- #
 # Core: per-marker onset detection
 # --------------------------------------------------------------------------- #
 def compute_latencies(marker_times, mcc_ts, mcc_sig,

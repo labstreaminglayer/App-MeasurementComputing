@@ -65,7 +65,31 @@ run_test.py --labrecorder-cli /path/to/LabRecorderCLI
 
 # Re-analyze an existing recording (no hardware):
 run_test.py --analyze-xdf recordings/audio_latency_xxx.xdf
+
+# Verify timestamps and exit non-zero if the MCC stream is bad:
+run_test.py --analyze-xdf recordings/audio_latency_xxx.xdf --fail-on-bad-timestamps
 ```
+
+## Timestamp verification
+
+Every run (live or `--analyze-xdf`) prints a **timestamp health check** for the
+MCC stream. Unlike the latency analysis — which loads with
+`dejitter_timestamps=True` and so *cleans up* the timestamps — this check loads
+the **raw** timestamps exactly as the outlet emitted them
+(`synchronize_clocks=False, dejitter_timestamps=False`) and reports:
+
+- **negative absolute timestamps** — a genuinely bad clock value;
+- **non-monotonic (backward) steps** — consecutive samples whose timestamp goes
+  *backwards*. These are the artifact of stamping each chunk's most-recent
+  sample with `local_clock()` at read time and letting liblsl back-date the
+  rest; when one chunk's back-dated start lands before the previous chunk's end,
+  time runs backward. In a consumer that does **not** dejitter (e.g. Orion), or
+  across machines, those backward steps are what surface as *negative
+  timestamps* / negative inter-sample intervals.
+
+Pass `--fail-on-bad-timestamps` to make the run exit non-zero when the MCC
+stream has negative or non-monotonic raw timestamps (useful as a regression
+gate once the outlet is fixed to emit monotonic, device-anchored timestamps).
 
 Outputs land in `scripts/audio_latency_test/recordings/`:
 `audio_latency_<tag>.xdf`, `latency_<tag>.png`, `latency_<tag>.npz`, and the

@@ -111,6 +111,11 @@ def parse_args(argv=None):
     p.add_argument("--analyze-xdf", default=None,
                    help="Analyze an existing XDF and exit (no hardware)")
 
+    # Timestamp verification
+    p.add_argument("--fail-on-bad-timestamps", action="store_true",
+                   help="Exit non-zero if the MCC stream has negative or "
+                        "non-monotonic (backward) raw timestamps")
+
     return p.parse_args(argv)
 
 
@@ -156,6 +161,22 @@ def report(args, latencies, marker_times, mcc_ts, mcc_sig, info, tag):
     return stats
 
 
+def verify_timestamps(args, xdf_path):
+    """Run the raw-timestamp health check; return an exit-code contribution.
+
+    Always prints the report. Returns 1 (so callers can OR it into their exit
+    code) when --fail-on-bad-timestamps is set and the MCC stream has negative
+    or non-monotonic timestamps; otherwise 0.
+    """
+    print()
+    ok, results = analysis.check_timestamps(xdf_path, args.mcc_name)
+    if not args.fail_on_bad_timestamps:
+        return 0
+    mcc = results.get(args.mcc_name, {})
+    bad = (not ok) or mcc.get("n_backward", 0) > 0
+    return 1 if bad else 0
+
+
 def _terminate(proc, timeout=5.0):
     if proc is None or proc.poll() is not None:
         return
@@ -185,7 +206,7 @@ def run_analyze_only(args):
     tag = os.path.splitext(os.path.basename(args.analyze_xdf))[0]
     os.makedirs(args.outdir, exist_ok=True)
     report(args, latencies, marker_times, mcc_ts, mcc_sig, info, tag)
-    return 0
+    return verify_timestamps(args, args.analyze_xdf)
 
 
 # --------------------------------------------------------------------------- #
@@ -286,7 +307,7 @@ def run_live(args):
             window=args.window, pre=args.pre,
             thresh_frac=args.thresh_frac, abs_threshold=args.abs_threshold)
         report(args, latencies, marker_times, mcc_ts, mcc_sig, info_recs, tag)
-        return 0
+        return verify_timestamps(args, xdf_path)
 
     finally:
         for closer in (
