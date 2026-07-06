@@ -218,16 +218,63 @@ jobs:
             ./scripts/sign_and_notarize.sh "$APP_PATH" --notarize
           fi
 
-          # Sign CLI and its bundled lsl.framework
+          # Sign CLI and its bundled lsl.framework + libusb
           CLI_PATH=$(find packages -name "MCCOutletCLI" -type f | head -1)
           if [[ -n "$CLI_PATH" ]]; then
             CLI_DIR=$(dirname "$CLI_PATH")
-            # Sign framework first (dependency must be signed before dependent)
+            mkdir -p "$CLI_DIR/Frameworks"
+
+            # -----------------------------------------------------------------
+            # Bundle libusb next to the CLI, exactly like lsl.framework.
+            #
+            # The CLI links libusb by an absolute Homebrew path. Once the CLI
+            # is Developer-ID signed with the hardened runtime it is subject to
+            # library validation and may only load dylibs signed by Apple or
+            # the same Team ID. Homebrew's libusb bottle is signed by a
+            # different team, so dyld refuses it unconditionally and the signed
+            # CLI is unrunnable on every machine. Fix: copy libusb in, normalize
+            # its install name to @rpath (resolved via the CLI's existing
+            # @executable_path/Frameworks rpath), repoint the CLI, and sign it
+            # with our identity BEFORE the CLI (dependency before dependent).
+            # -----------------------------------------------------------------
+            LIBUSB_DEST="$CLI_DIR/Frameworks/libusb-1.0.0.dylib"
+            if [[ ! -f "$LIBUSB_DEST" ]]; then
+              # Prefer the copy macdeployqt already placed in the app bundle,
+              # otherwise fall back to the reference the CLI currently links
+              # (brew prefix differs: arm64 /opt/homebrew, x86_64 /usr/local).
+              APP_LIBUSB=$(find packages -path "*.app/Contents/Frameworks/libusb-1.0.0.dylib" -type f | head -1)
+              if [[ -n "$APP_LIBUSB" ]]; then
+                cp "$APP_LIBUSB" "$LIBUSB_DEST"
+              else
+                cp "$(otool -L "$CLI_PATH" | awk '/libusb-1\.0\.0\.dylib/{print $1; exit}')" "$LIBUSB_DEST"
+              fi
+              chmod u+w "$LIBUSB_DEST"
+            fi
+            install_name_tool -id @rpath/libusb-1.0.0.dylib "$LIBUSB_DEST"
+
+            # Repoint the CLI from the absolute brew path to the bundled copy.
+            CLI_LIBUSB_REF=$(otool -L "$CLI_PATH" | awk '/libusb-1\.0\.0\.dylib/{print $1; exit}')
+            if [[ -n "$CLI_LIBUSB_REF" && "$CLI_LIBUSB_REF" != "@rpath/libusb-1.0.0.dylib" ]]; then
+              install_name_tool -change "$CLI_LIBUSB_REF" @rpath/libusb-1.0.0.dylib "$CLI_PATH"
+            fi
+
+            # Sign bundled dependencies first (must precede the dependent CLI).
             if [[ -d "$CLI_DIR/Frameworks/lsl.framework" ]]; then
               codesign --force --sign "$APPLE_CODE_SIGN_IDENTITY_APP" --options runtime \
                 "$CLI_DIR/Frameworks/lsl.framework"
             fi
+            codesign --force --sign "$APPLE_CODE_SIGN_IDENTITY_APP" --options runtime \
+              "$LIBUSB_DEST"
+
             ./scripts/sign_and_notarize.sh "$CLI_PATH" --notarize
+
+            # Guardrail: a signed CLI that still links an absolute brew dylib is
+            # dead on arrival under library validation. Fail the build instead.
+            if otool -L "$CLI_PATH" | grep -qE '/(opt/homebrew|usr/local)/'; then
+              echo "ERROR: signed CLI links non-bundled dylibs:"
+              otool -L "$CLI_PATH"
+              exit 1
+            fi
           fi
 
       # -----------------------------------------------------------------------
