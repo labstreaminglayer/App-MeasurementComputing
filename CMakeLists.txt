@@ -15,8 +15,12 @@ if(POLICY CMP0177)
     cmake_policy(SET CMP0177 NEW)
 endif()
 
+# Version is derived from the nearest git tag (see cmake/ProjectVersion.cmake).
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ProjectVersion.cmake)
+mccoutlet_version_from_git(MCCOUTLET_VERSION MCCOUTLET_VERSION_FULL FALLBACK "3.2.2")
+
 project(MCCOutlet
-    VERSION 3.2.1
+    VERSION ${MCCOUTLET_VERSION}
     DESCRIPTION "Measurement Computing DAQ to LSL"
     HOMEPAGE_URL "https://github.com/labstreaminglayer/App-MeasurementComputing"
     LANGUAGES CXX C
@@ -36,7 +40,7 @@ option(MCCOUTLET_BUILD_CLI "Build the CLI application" ON)
 # liblsl Dependency
 # =============================================================================
 set(LSL_INSTALL_ROOT "" CACHE PATH "Path to installed liblsl (optional)")
-set(LSL_FETCH_REF "v1.18.0.b2" CACHE STRING "liblsl version to fetch from GitHub")
+set(LSL_FETCH_REF "v1.18.0.b5" CACHE STRING "liblsl version to fetch from GitHub")
 
 if(LSL_INSTALL_ROOT)
     find_package(LSL REQUIRED
@@ -211,11 +215,11 @@ LSL_get_target_arch()
 LSL_get_os_name()
 
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_VERSION "${MCCOUTLET_VERSION_FULL}")
 set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 set(CPACK_PACKAGE_HOMEPAGE_URL "${PROJECT_HOMEPAGE_URL}")
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}-${LSL_OS}_${LSL_ARCH}")
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${MCCOUTLET_VERSION_FULL}-${LSL_OS}_${LSL_ARCH}")
 set(CPACK_STRIP_FILES ON)
 
 if(WIN32)
