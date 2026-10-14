@@ -105,7 +105,7 @@ uldaq is fetched and built automatically from source (via `ExternalProject`). No
 | `MCCOUTLET_BUILD_CLI`  | ON      | Build the CLI application                        |
 | `ULDAQ_GIT_TAG`        | v1.2.1  | uldaq version to fetch from GitHub               |
 | `LSL_INSTALL_ROOT`     | -       | Path to installed liblsl (skips FetchContent)    |
-| `LSL_FETCH_REF`        | v1.17.4 | liblsl git ref to fetch                          |
+| `LSL_FETCH_REF`        | v1.18.0.b6 | liblsl git ref to fetch                          |
 
 ### CLI-Only Build
 
