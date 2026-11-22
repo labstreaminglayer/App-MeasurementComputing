@@ -256,9 +256,9 @@ stamped in the same clock:
 
 To remove the fixed part, measure it once for your setup and set `timestamp_offset_us` in the config file
 (or pass `--ts-offset-us`); it is subtracted from every timestamp. Default is 0. See
-`scripts/gpio_latency_test` for a Raspberry Pi procedure. A typical value is ~90–100 µs on a Pi 5 / Linux;
-macOS is unmeasured (`scripts/audio_latency_test` measured ~1.1 ms total there with the old poll-time
-stamps, including unknown audio output latency).
+`scripts/gpio_latency_test` for a Raspberry Pi procedure. Typical values: ~90–100 µs on a Pi 5 / Linux, and
+~150 µs on a Mac mini (Apple silicon, macOS 27; Pi GPIO edges mapped into the Mac's clock through a gPTP
+link with hardware timestamps: 148 and 151 µs in two 300 s runs, SD 10–15 µs).
 
 ## macOS Code Signing
 
