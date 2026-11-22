@@ -34,3 +34,7 @@ stamp - true (us): mean 96.9 SD 7.4 ...
 The mean is the remaining latency: put it in `timestamp_offset_us` (or pass `--ts-offset-us`), then
 rerun with the offset applied to check that the mean is ~0. ~1000 edges (300 s) give a mean to ~0.2 µs.
 The SD is mostly the 20 µs sample spacing at 50 kHz, not timestamp jitter.
+
+The latency depends on rate and channel count, so measure at your own settings: extra `run.sh` arguments
+override the defaults (e.g. `./run.sh cal 300 --rate 16384 --high-chan 5`; keep CH1 in the scan). At low
+rates the per-edge spread is about the sample period / √12, so use more edges.

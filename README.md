@@ -259,6 +259,9 @@ To remove the fixed part, measure it once for your setup and set `timestamp_offs
 `scripts/gpio_latency_test` for a Raspberry Pi procedure. Typical values: ~90–100 µs on a Pi 5 / Linux, and
 ~150 µs on a Mac mini (Apple silicon, macOS 27; Pi GPIO edges mapped into the Mac's clock through a gPTP
 link with hardware timestamps: 148 and 151 µs in two 300 s runs, SD 10–15 µs).
+The value depends on the acquisition settings, so calibrate with the rate and channel count you record
+with. On the Mac mini: 85 ± 8 µs at 1 kHz × 2 ch, 148–151 µs at 50 kHz × 2 ch, 150 µs at 100 kHz × 1 ch,
+161 µs at 16384 Hz × 6 ch.
 
 ## macOS Code Signing
 
