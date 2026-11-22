@@ -10,6 +10,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <string>
@@ -79,8 +80,8 @@ public:
      * @return true if data was retrieved, false on error or shutdown
      *
      * Blocks until at least one scan is available, then drains everything
-     * the device has buffered. The timestamp is captured at the moment
-     * data availability is detected.
+     * the device has buffered. The timestamp is the most recent sample's
+     * arrival time, from a line fitted to scan count vs. poll time.
      */
     virtual bool getData(std::vector<float>& buffer, double& timestamp) = 0;
 
@@ -125,6 +126,7 @@ public:
         double sample_rate = 44100.0;
         int range = -1;             ///< uldaq Range enum value, -1 = auto-select first
         bool scaled = true;         ///< true = calibrated voltage (float), false = raw ADC (int)
+        double timestamp_offset = 0.0;  ///< seconds subtracted from every timestamp (fixed transport latency)
     };
 
     using StatusCallback = std::function<void(const std::string& message, bool is_error)>;
@@ -145,6 +147,7 @@ public:
 
 private:
     bool restartScan();
+    double stampFor(unsigned long long scans, double t_poll);
 
     Config config_;
     StatusCallback statusCallback_;
@@ -164,6 +167,9 @@ private:
 
     // Track read position (cumulative scan count consumed)
     unsigned long long scans_read_ = 0;
+
+    // (scan count, local_clock) at each poll that saw new scans; see stampFor()
+    std::deque<std::pair<double, double>> clock_pts_;
 
     // Detected device capabilities
     int input_mode_ = 0;   // AiInputMode (stored as int to avoid uldaq.h in header)

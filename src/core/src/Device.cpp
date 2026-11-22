@@ -3,6 +3,7 @@
 #include <lsl_cpp.h>
 #include <uldaq.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <stdexcept>
@@ -22,6 +23,16 @@ constexpr int SCAN_BUFFER_SECONDS = 10;
 // call. A genuine overrun recovers in one restart; an unrecoverable USB state
 // (e.g. stuck transfers) otherwise spins here forever, hammering ulAInScanStop.
 constexpr int MAX_RESTART_ATTEMPTS = 3;
+
+// Span of (scan count, poll time) history the timestamp line is fitted over,
+// and the span below which the slope is held at the nominal rate.
+constexpr double CLOCK_WINDOW_SECONDS = 30.0;
+constexpr double CLOCK_MIN_FIT_SECONDS = 5.0;
+// If even the best poll of the last CLOCK_RECENT_SECONDS sits more than
+// CLOCK_SLACK_SECONDS above the line, the host clock rate has changed (e.g. an
+// NTP slew) faster than the window can follow: lift the line to those polls.
+constexpr double CLOCK_RECENT_SECONDS = 2.0;
+constexpr double CLOCK_SLACK_SECONDS = 20e-6;
 
 std::string ulErrorString(UlError err) {
     char msg[ERR_MSG_LEN]{};
@@ -376,6 +387,7 @@ bool MCCDevice::startAcquisition() {
     }
 
     scans_read_ = 0;
+    clock_pts_.clear();
     overrun_count_ = 0;
     scanning_ = true;
     return true;
@@ -416,6 +428,7 @@ bool MCCDevice::restartScan() {
     }
 
     scans_read_ = 0;
+    clock_pts_.clear();
     overrun_count_++;
 
     // Coalesce reports to at most one per second so a recovery storm cannot
@@ -481,6 +494,48 @@ DeviceCapabilities MCCDevice::getCapabilities() const {
     return capabilities_;
 }
 
+double MCCDevice::stampFor(unsigned long long scans, double t_poll) {
+    // A poll that sees `scans` completed scans proves they arrived before t_poll,
+    // so arrival(n) = a + b*n is the line under every (count, poll time) point
+    // that is highest at the points' mean count (a lower envelope: rejects the
+    // 0-1 ms of poll delay, tracks the device/host rate ratio). Coordinates are
+    // relative to the newest point to keep full precision.
+    clock_pts_.emplace_back(static_cast<double>(scans), t_poll);
+    while (t_poll - clock_pts_.front().second > CLOCK_WINDOW_SECONDS) clock_pts_.pop_front();
+    const double n0 = static_cast<double>(scans);
+    double at_n0;  // the line's value at n0, relative to t_poll (always <= 0)
+    if (t_poll - clock_pts_.front().second < CLOCK_MIN_FIT_SECONDS) {
+        at_n0 = 0.0;
+        for (const auto& [n, t] : clock_pts_)
+            at_n0 = std::min(at_n0, (t - t_poll) - (n - n0) / actual_rate_);
+    } else {
+        std::vector<std::pair<double, double>> hull;  // lower convex hull, counts ascending
+        double mean_n = 0.0;
+        for (const auto& [n, t] : clock_pts_) {
+            const std::pair<double, double> p{n - n0, t - t_poll};
+            mean_n += p.first;
+            while (hull.size() >= 2) {
+                const auto& [x1, y1] = hull[hull.size() - 2];
+                const auto& [x2, y2] = hull.back();
+                if ((x2 - x1) * (p.second - y1) - (y2 - y1) * (p.first - x1) > 0) break;
+                hull.pop_back();
+            }
+            hull.push_back(p);
+        }
+        mean_n /= static_cast<double>(clock_pts_.size());
+        size_t k = 0;
+        while (k + 2 < hull.size() && hull[k + 1].first <= mean_n) ++k;
+        const auto [x1, y1] = hull[k];
+        const double b = (hull[k + 1].second - y1) / (hull[k + 1].first - x1);
+        double recent = CLOCK_WINDOW_SECONDS;  // min height of recent polls above the line
+        for (auto it = clock_pts_.rbegin();
+             it != clock_pts_.rend() && t_poll - it->second <= CLOCK_RECENT_SECONDS; ++it)
+            recent = std::min(recent, (it->second - t_poll) - (y1 + (it->first - n0 - x1) * b));
+        at_n0 = y1 - x1 * b + std::max(0.0, recent - CLOCK_SLACK_SECONDS);
+    }
+    return t_poll + at_n0 - config_.timestamp_offset;
+}
+
 bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
     if (!connected_ || handle_ == 0) return false;
 
@@ -493,6 +548,7 @@ bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
         TransferStatus xfer{};
 
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
+        const double t_poll = lsl::local_clock();
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
             if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
@@ -512,7 +568,7 @@ bool MCCDevice::getData(std::vector<float>& buffer, double& timestamp) {
                               static_cast<long long>(scans_read_);
 
         if (available > 0) {
-            timestamp = lsl::local_clock();
+            timestamp = stampFor(scans_read_ + available, t_poll);
 
             size_t num_elements = static_cast<size_t>(available) * channelCount;
             buffer.resize(num_elements);
@@ -547,6 +603,7 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
         TransferStatus xfer{};
 
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
+        const double t_poll = lsl::local_clock();
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
             if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
@@ -566,7 +623,7 @@ bool MCCDevice::getDataInt32(std::vector<int32_t>& buffer, double& timestamp) {
                               static_cast<long long>(scans_read_);
 
         if (available > 0) {
-            timestamp = lsl::local_clock();
+            timestamp = stampFor(scans_read_ + available, t_poll);
 
             size_t num_elements = static_cast<size_t>(available) * channelCount;
             buffer.resize(num_elements);
@@ -603,6 +660,7 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
         TransferStatus xfer{};
 
         UlError err = ulAInScanStatus(handle_, &status, &xfer);
+        const double t_poll = lsl::local_clock();
         if (err != ERR_NO_ERROR || status != SS_RUNNING) {
             if (disconnecting_) return false;
             if (++restart_attempts > MAX_RESTART_ATTEMPTS) {
@@ -622,7 +680,7 @@ bool MCCDevice::getDataInt16(std::vector<int16_t>& buffer, double& timestamp) {
                               static_cast<long long>(scans_read_);
 
         if (available > 0) {
-            timestamp = lsl::local_clock();
+            timestamp = stampFor(scans_read_ + available, t_poll);
 
             size_t num_elements = static_cast<size_t>(available) * channelCount;
             buffer.resize(num_elements);

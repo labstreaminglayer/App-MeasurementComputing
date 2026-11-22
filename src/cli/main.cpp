@@ -40,6 +40,7 @@ void printUsage(const char* program_name) {
               << "  -r, --rate RATE         Sample rate in Hz (default: 44100)\n"
               << "  --range VALUE           Voltage range (uldaq Range enum value, default: auto)\n"
               << "  --raw                   Output raw integer ADC integers instead of scaled voltage\n"
+              << "  --ts-offset-us US       Subtract US microseconds from every timestamp (default: 0)\n"
               << "\n"
               << "Examples:\n"
               << "  " << program_name << " --list-devices\n"
@@ -96,6 +97,8 @@ int main(int argc, char* argv[]) {
             config.range = std::stoi(argv[++i]);
         } else if (arg == "--raw") {
             config.scaled = false;
+        } else if (arg == "--ts-offset-us" && i + 1 < argc) {
+            config.timestamp_offset_us = std::stod(argv[++i]);
         } else {
             std::cerr << "Unknown option: " << arg << std::endl;
             printUsage(argv[0]);
@@ -199,7 +202,8 @@ int main(int argc, char* argv[]) {
         .high_channel = config.high_channel,
         .sample_rate = config.sample_rate,
         .range = config.range,
-        .scaled = config.scaled
+        .scaled = config.scaled,
+        .timestamp_offset = config.timestamp_offset_us * 1e-6
     };
     auto device = std::make_unique<mccoutlet::MCCDevice>(device_config, statusCallback);
 

@@ -146,6 +146,7 @@ Options:
   -r, --rate RATE         Sample rate in Hz (default: 16384)
   --range VALUE           Voltage range (uldaq Range enum value, default: auto)
   --raw                   Output raw integer ADC instead of scaled voltage
+  --ts-offset-us US       Subtract US microseconds from every timestamp (default: 0)
 ```
 
 Examples:
@@ -182,6 +183,7 @@ high_channel=5
 sample_rate=16384
 # range=6
 # scaled=1
+# timestamp_offset_us=0
 ```
 
 ## Data Formats and LSL Stream Metadata
@@ -233,9 +235,30 @@ USB Full Speed devices have limited hardware FIFOs (e.g., 64 KB on the USB-1608F
 
 The number of available channels depends on the device and its input mode. The USB-1608FS-Plus provides 8 single-ended channels (0-7). If `high_channel` exceeds the device's maximum, it is silently clamped.
 
-### Timestamp Delay
+### Timestamps
 
-Using scripts/audio_latency_test, I characterized that the USB-1608FS-Plus timestamps audio tones about **1.1 msec** after the audio callback time. This delay could either be due to a delay in the audio hardware layer or in the DAQ buffer, or a combination of both. These delays exist in all devices and are generally unknowable but can be characterized using hardware synchronizing the different devices. If someone identifies consistent delays in the hardware then please let me know, and I can subtract these delays from the timestamps at the source.
+Each chunk's timestamp comes from a line fitted to the device's scan count against the host clock at
+every poll that sees new data (a lower envelope over the last 30 s that follows the device/host rate
+ratio), not from the poll time itself. This removes the 0–1 ms poll delay and its jitter.
+If the host clock's rate changes faster than that window follows (an NTP slew), the line is lifted to
+the best poll of the last 2 s, which bounds the error to tens of µs for gradual NTP corrections and a few
+hundred µs for a 200–500 ppm slew.
+
+What remains is a fixed transport latency (USB transfer plus driver completion) that depends on host, OS
+and USB topology. Measured on a Raspberry Pi 5 (Debian 13) with a USB-1608FS-Plus, against a GPIO edge
+stamped in the same clock:
+
+| | stamp − true time (µs) |
+|---|---|
+| Before (poll-time stamps) | mean 627, SD 297 |
+| Now, `timestamp_offset_us=0` | mean 95–97, SD 7.5 (mostly the test's 20 µs sample spacing) |
+| Now, `timestamp_offset_us=93` | mean 2.8, SD 8.0 |
+
+To remove the fixed part, measure it once for your setup and set `timestamp_offset_us` in the config file
+(or pass `--ts-offset-us`); it is subtracted from every timestamp. Default is 0. See
+`scripts/gpio_latency_test` for a Raspberry Pi procedure. A typical value is ~90–100 µs on a Pi 5 / Linux;
+macOS is unmeasured (`scripts/audio_latency_test` measured ~1.1 ms total there with the old poll-time
+stamps, including unknown audio output latency).
 
 ## macOS Code Signing
 

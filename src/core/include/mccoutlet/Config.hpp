@@ -22,6 +22,7 @@ struct AppConfig {
     double sample_rate = 16384.0;
     int range = -1;  ///< uldaq Range enum value, -1 = auto-select first
     bool scaled = true;  ///< true = calibrated voltage, false = raw ADC integers
+    double timestamp_offset_us = 0.0;  ///< subtracted from every timestamp (measured transport latency)
 };
 
 class ConfigManager {

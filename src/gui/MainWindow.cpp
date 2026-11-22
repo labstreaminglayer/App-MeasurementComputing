@@ -87,7 +87,8 @@ void MainWindow::onLinkButtonClicked() {
             .high_channel = ui_->input_high_chan->value(),
             .sample_rate = ui_->input_srate->value(),
             .range = ui_->input_range->currentData().toInt(),
-            .scaled = (ui_->input_data_format->currentIndex() == 0)
+            .scaled = (ui_->input_data_format->currentIndex() == 0),
+            .timestamp_offset = timestamp_offset_us_ * 1e-6
         };
 
         auto callback = [this](const std::string& message, bool is_error) {
@@ -249,6 +250,7 @@ void MainWindow::loadConfig(const QString& filename) {
         }
 
         ui_->input_data_format->setCurrentIndex(config->scaled ? 0 : 1);
+        timestamp_offset_us_ = config->timestamp_offset_us;
 
         last_config_path_ = filename;
         updateStatus("Loaded: " + filename, false);
@@ -270,7 +272,8 @@ void MainWindow::saveConfig(const QString& filename) {
         .high_channel = ui_->input_high_chan->value(),
         .sample_rate = ui_->input_srate->value(),
         .range = ui_->input_range->currentData().toInt(),
-        .scaled = (ui_->input_data_format->currentIndex() == 0)
+        .scaled = (ui_->input_data_format->currentIndex() == 0),
+        .timestamp_offset_us = timestamp_offset_us_
     };
 
     if (mccoutlet::ConfigManager::save(config, filename.toStdString())) {

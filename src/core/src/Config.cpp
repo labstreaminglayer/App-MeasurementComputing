@@ -126,6 +126,8 @@ std::optional<AppConfig> ConfigManager::load(const std::filesystem::path& path) 
                 config.range = std::stoi(value);
             } else if (key == "scaled") {
                 config.scaled = (value != "0" && value != "false");
+            } else if (key == "timestamp_offset_us") {
+                config.timestamp_offset_us = std::stod(value);
             }
         }
     }
@@ -154,6 +156,7 @@ bool ConfigManager::save(const AppConfig& config, const std::filesystem::path& p
         file << "range=" << config.range << "\n";
     }
     file << "scaled=" << (config.scaled ? "1" : "0") << "\n";
+    file << "timestamp_offset_us=" << config.timestamp_offset_us << "\n";
 
     return file.good();
 }
