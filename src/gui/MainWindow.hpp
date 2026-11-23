@@ -46,5 +46,6 @@ private:
     std::unique_ptr<Ui::MainWindow> ui_;
     std::unique_ptr<mccoutlet::StreamThread> stream_;
     QString last_config_path_;
+    double timestamp_offset_us_ = 0.0;  // config-file only, no widget
     mccoutlet::DeviceCapabilities current_caps_;
 };
